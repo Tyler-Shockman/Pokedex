@@ -14,3 +14,4 @@ use Illuminate\Http\Request;
 */
 
 Route::get('/pokemon', 'PokemonController@index');
+Route::get('/pokemon/{id}', 'PokemonController@show');

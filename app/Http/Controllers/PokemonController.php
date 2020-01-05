@@ -7,6 +7,10 @@ use App\Pokemon;
 
 class PokemonController extends Controller
 {
+    /**
+     * Retrieves the page (number) and count (per page) query parameters from the request and returns the desired page
+     * from a paginated list of pokemon that contains the desired count per page.
+     */
     public function index(Request $request)
     {
         // Get page number query parameter and convert to an int. If not provided, default to first page (1).
@@ -113,6 +117,39 @@ class PokemonController extends Controller
                 'count' => $count,
                 'pokemon' => $pokemon
             ]
+        ], 200);
+    }
+
+
+    /**
+     * Takes the provided $id parameter and returns the information for the
+     * pokemon with that id.
+     */
+    public function show($id)
+    {
+        // Query for a pokemon with the desired id.
+        $pokemon = Pokemon::where('id', $id)->first();
+
+        // If no pokemon is found, fail.
+        if (!$pokemon) {
+            // Return json response. 404 - Not Found
+            return response()->json([
+                'success' => false,
+                'message' => "Could not find a pokemon with the id {$id}.",
+                'links' => [
+                    'PokemonListPage1' => "{$_ENV['APP_URL']}/api/pokemon?page=1&count=10"
+                ]
+            ], 404);
+        }
+
+        // Else, return json response. 200 - OK
+        return response()->json([
+            'success' => true,
+            'message' => "Information for {$pokemon->name}, id = {$id}, successfully retrieved.",
+            'links' => [
+                'self' => "{$_ENV['APP_URL']}/api/pokemon/{$id}"
+            ],
+            'data' => $pokemon
         ], 200);
     }
 }
