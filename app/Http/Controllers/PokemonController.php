@@ -7,12 +7,33 @@ use App\Pokemon;
 
 class PokemonController extends Controller
 {
+
+    /**
+     * Added this helper function to protect against what I believe to be a bug in the version of laravel that I am using.
+     * Running the program through 'php artisan serve' seems to cause some issue with the environment file where the 'APP_URL'
+     * doesn't exist. This causes an error to be thrown. Through this function the url should default to localhost port 8000
+     * (the url for php artisan serve) if this issue occures. This will help ensure the program functions when being explored.
+     */
+    private function safeURL()
+    {
+        // Try to return the APP_URL from the environment file. If not set, return localhost:8000
+        try {
+            return env('APP_URL', 'http://localhost:8000');
+        }
+        // Catch handle exceptions and instead return localhost:8000 as the url.
+        catch (HandleException $e) {
+            return 'http://localhost:8000';
+        }
+    }
+
     /**
      * Retrieves the page (number) and count (per page) query parameters from the request and returns the desired page
      * from a paginated list of pokemon that contains the desired count per page.
      */
     public function index(Request $request)
     {
+        $url = $this->safeURL();
+
         // Get page number query parameter and convert to an int. If not provided, default to first page (1).
         $page = (int)$request->input('page', 1);
         // If the provided value was less than or equal to 0, fail. All non int inputs will have converted to 0.
@@ -24,7 +45,7 @@ class PokemonController extends Controller
                 'message' => 'The provided page number is not an acceptable value. '.
                     'The page query parameter must be set an integer greater than or equal to 1.',
                 'links' => [
-                    'first' => "{$_ENV['APP_URL']}/api/pokemon?page=1"
+                    'first' => "{$url}/api/pokemon?page=1"
                 ]
                 ], 400);
         }
@@ -40,12 +61,12 @@ class PokemonController extends Controller
                 'message' => 'The provided page count is not an acceptable value. '.
                     'Acceptable page counts are 5, 10, 20, 25, 50, and 100',
                 'links' => [
-                    '5Count' => "{$_ENV['APP_URL']}/api/pokemon?count=5",
-                    '10Count' => "{$_ENV['APP_URL']}/api/pokemon?count=10",
-                    '20Count' => "{$_ENV['APP_URL']}/api/pokemon?count=20",
-                    '25Count' => "{$_ENV['APP_URL']}/api/pokemon?count=25",
-                    '50Count' => "{$_ENV['APP_URL']}/api/pokemon?count=50",
-                    '100Count' => "{$_ENV['APP_URL']}/api/pokemon?count=100"
+                    '5Count' => "{$url}/api/pokemon?count=5",
+                    '10Count' => "{$url}/api/pokemon?count=10",
+                    '20Count' => "{$url}/api/pokemon?count=20",
+                    '25Count' => "{$url}/api/pokemon?count=25",
+                    '50Count' => "{$url}/api/pokemon?count=50",
+                    '100Count' => "{$url}/api/pokemon?count=100"
                 ]
             ], 400);
         };
@@ -61,7 +82,7 @@ class PokemonController extends Controller
                 'message' => 'The provided page number does not exist for the provided page count. '.
                     'The page number is greater than the last available page.',
                 'links' => [
-                    'last' => "{$_ENV['APP_URL']}/api/pokemon?page={$last}&count={$count}"
+                    'last' => "{$url}/api/pokemon?page={$last}&count={$count}"
                 ]
                 ], 400);
         }
@@ -87,14 +108,14 @@ class PokemonController extends Controller
         $next = ($page == $last ? $last : ($page + 1));
 
         // Map pokemon array to only include the desired information. Add link to self's full information.
-        $pokemon = array_map(function($oldPokemon) {
+        $pokemon = array_map(function($oldPokemon) use ($url) {
             return [
                 'id' => $oldPokemon->id,
                 'name' => $oldPokemon->name,
                 'types' => $oldPokemon->types,
                 'description' => $oldPokemon->description,
                 'links' => [
-                    'self' => "{$_ENV['APP_URL']}/api/pokemon/{$oldPokemon->id}"
+                    'self' => "{$url}/api/pokemon/{$oldPokemon->id}"
                 ]
                 ];
         }, $pokemon);
@@ -105,11 +126,11 @@ class PokemonController extends Controller
             'message' => "Page {$page} of the paginate list of pokemon defined with {$count} pokemon per page ".
                 "was successfully retrieved.",
             'links' => [
-                'first' => "{$_ENV['APP_URL']}/api/pokemon?page=1&count={$count}",
-                'previous' => "{$_ENV['APP_URL']}/api/pokemon?page={$previous}&count={$count}",
-                'self' => "{$_ENV['APP_URL']}/api/pokemon?page={$page}&count={$count}",
-                'next' => "{$_ENV['APP_URL']}/api/pokemon?page={$next}&count={$count}",
-                'last' => "{$_ENV['APP_URL']}/api/pokemon?page={$last}&count={$count}",
+                'first' => "{$url}/api/pokemon?page=1&count={$count}",
+                'previous' => "{$url}/api/pokemon?page={$previous}&count={$count}",
+                'self' => "{$url}/api/pokemon?page={$page}&count={$count}",
+                'next' => "{$url}/api/pokemon?page={$next}&count={$count}",
+                'last' => "{$url}/api/pokemon?page={$last}&count={$count}",
             ],
             'data' => [
                 'page_number' => $page,
@@ -127,6 +148,8 @@ class PokemonController extends Controller
      */
     public function show($id)
     {
+        $url = $this->safeURL();
+
         // Query for a pokemon with the desired id.
         $pokemon = Pokemon::where('id', $id)->first();
 
@@ -137,7 +160,7 @@ class PokemonController extends Controller
                 'success' => false,
                 'message' => "Could not find a pokemon with the id {$id}.",
                 'links' => [
-                    'PokemonListPage1' => "{$_ENV['APP_URL']}/api/pokemon?page=1&count=10"
+                    'PokemonListPage1' => "{$url}/api/pokemon?page=1&count=10"
                 ]
             ], 404);
         }
@@ -147,7 +170,7 @@ class PokemonController extends Controller
             'success' => true,
             'message' => "Information for {$pokemon->name}, id = {$id}, successfully retrieved.",
             'links' => [
-                'self' => "{$_ENV['APP_URL']}/api/pokemon/{$id}"
+                'self' => "{$url}/api/pokemon/{$id}"
             ],
             'data' => $pokemon
         ], 200);
