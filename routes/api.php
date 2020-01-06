@@ -15,3 +15,12 @@ use Illuminate\Http\Request;
 
 Route::get('/pokemon', 'PokemonController@index');
 Route::get('/pokemon/{id}', 'PokemonController@show');
+
+Route::post('login', 'PassportController@login');
+Route::post('register', 'PassportController@register');
+ 
+Route::middleware('auth:api')->group(function () {
+    Route::get('user', 'PassportController@details');
+ 
+    Route::resource('captures', 'CaptureController');
+});
