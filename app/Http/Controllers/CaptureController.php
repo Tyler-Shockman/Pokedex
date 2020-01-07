@@ -34,7 +34,7 @@ class CaptureController extends Controller
             'data' => [
                 'captures' => $captures
             ]
-        ]);
+        ], 200);
     }
  
     public function show($id)
@@ -64,7 +64,7 @@ class CaptureController extends Controller
                 'capture' => $capture,
                 'pokemon' => $pokemon
             ]
-        ], 400);
+        ], 200);
     }
  
     public function store(Request $request)
@@ -87,7 +87,7 @@ class CaptureController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => auth()->user()->name." has already marked {$pokemon->name} as captured."
-            ]);
+            ], 400);
         };
 
         $capture = new Capture();
@@ -101,7 +101,7 @@ class CaptureController extends Controller
                     'capture' => $capture->toArray(),
                     'pokemon' => $pokemon
                 ]
-            ]);
+            ], 201);
         else
             return response()->json([
                 'success' => false,
@@ -111,47 +111,39 @@ class CaptureController extends Controller
  
     public function update(Request $request, $id)
     {
-        $capture = auth()->user()->captures()->find($id);
- 
-        if (!$capture) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Capture with id ' . $id . ' not found'
-            ], 400);
-        }
- 
-        $updated = $capture->fill($request->all())->save();
- 
-        if ($updated)
-            return response()->json([
-                'success' => true
-            ]);
-        else
-            return response()->json([
-                'success' => false,
-                'message' => 'Capture could not be updated'
-            ], 500);
+        $url = $this->safeURL();
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Captures cannot be updated. Captures can only be created or delete.',
+        ], 400);
     }
  
     public function destroy($id)
     {
-        $capture = auth()->user()->captures()->find($id);
+        $user = auth()->user();
+        $capture = $user->captures()->select('id', 'user_id', 'pokemon_id')->where('pokemon_id', $id)->first();
+        $pokemon = Pokemon::select('name')->where('id', $id)->first();
  
         if (!$capture) {
             return response()->json([
                 'success' => false,
-                'message' => 'Capture with id ' . $id . ' not found'
+                'message' => "{$user->name} does not have an existing capture of {$pokemon->name}, id = {$id}."
             ], 400);
         }
  
         if ($capture->delete()) {
             return response()->json([
-                'success' => true
+                'success' => true,
+                'message' => "Capture of {$pokemon->name} has been removed for trainer {$user->name}.",
+                'data' => [
+                    'capture' => $capture->toArray()
+                ]
             ]);
         } else {
             return response()->json([
                 'success' => false,
-                'message' => 'Capture could not be deleted'
+                'message' => "The capture of {$pokemon->name} by {$user->name} could not be delete."
             ], 500);
         }
     }
