@@ -13,6 +13,7 @@ class PokemonController extends Controller
      */
     public function index(Request $request)
     {
+        // Get url with safeURL helper function.
         $url = $this->safeURL();
 
         // Get page number query parameter and convert to an int. If not provided, default to first page (1).
@@ -130,6 +131,7 @@ class PokemonController extends Controller
     public function show($id)
     {
         $url = $this->safeURL();
+        // Get url with safeURL helper function.
 
         // Query for a pokemon with the desired id.
         $pokemon = Pokemon::where('id', $id)->first();
