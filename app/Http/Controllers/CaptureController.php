@@ -18,7 +18,7 @@ class CaptureController extends Controller
             $pokemon = Pokemon::select('id', 'name')->where('id', $capture['pokemon_id'])->get();
             $pokemon = $pokemon[0];
             $pokemon['links'] = [
-                'self' => "{$url}/pokemon/{$pokemon['id']}"
+                'self' => "{$url}/api/pokemon/{$pokemon['id']}"
             ];
 
             return [
@@ -31,45 +31,81 @@ class CaptureController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Pokemon captures for ".auth()->user()->name." were successfully retrieved.",
-            'data' => $captures
+            'data' => [
+                'captures' => $captures
+            ]
         ]);
     }
  
     public function show($id)
     {
-        $capture = auth()->user()->captures()->find($id);
+        $url = $this->safeURL();
+
+        $capture = auth()->user()->captures()->where('pokemon_id', $id)->get()->toArray();
+        $capture = $capture[0];
+
+        $pokemon = Pokemon::select('id', 'name')->where('id', $id)->get();
+        $pokemon = $pokemon[0];
+        $pokemon['links'] = [
+            'self' => "{$url}/api/pokemon/{$pokemon['id']}"
+        ];
  
         if (!$capture) {
             return response()->json([
                 'success' => false,
-                'message' => 'Capture with id ' . $id . ' not found'
+                'message' => auth()->user()->name." has not marked {$pokemon->name} as captured. No captured on file.",
             ], 400);
         }
  
         return response()->json([
             'success' => true,
-            'data' => $capture->toArray()
+            'message' => "Capture for {$pokemon->name} was successfully retrieved for trainer ".auth()->user()->name.".",
+            'data' => [
+                'capture' => $capture,
+                'pokemon' => $pokemon
+            ]
         ], 400);
     }
  
     public function store(Request $request)
     {
+        $url = $this->safeURL();
+
         $this->validate($request, [
             'pokemon_id' => 'required|integer'
         ]);
- 
+
+        $pokemon = Pokemon::select('id', 'name')->where('id', $request->pokemon_id)->get();
+        $pokemon = $pokemon[0];
+        $pokemon['links'] = [
+            'self' => "{$url}/api/pokemon/{$pokemon['id']}"
+        ];
+
+        $existing_capture = auth()->user()->captures()->where('pokemon_id', $request->pokemon_id)->first();
+
+        if ($existing_capture) {
+            return response()->json([
+                'success' => false,
+                'message' => auth()->user()->name." has already marked {$pokemon->name} as captured."
+            ]);
+        };
+
         $capture = new Capture();
         $capture->pokemon_id = $request->pokemon_id;
  
         if (auth()->user()->captures()->save($capture))
             return response()->json([
                 'success' => true,
-                'data' => $capture->toArray()
+                'message' => "Capture for {$pokemon->name} was successfully created for trainer ".auth()->user()->name.".",
+                'data' => [
+                    'capture' => $capture->toArray(),
+                    'pokemon' => $pokemon
+                ]
             ]);
         else
             return response()->json([
                 'success' => false,
-                'message' => 'Capture could not be added'
+                'message' => 'Capture could not be added.'
             ], 500);
     }
  
