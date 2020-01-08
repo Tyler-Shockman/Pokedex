@@ -139,9 +139,6 @@ class CaptureController extends Controller
     // As captures should only be created and delete (not updated), this simply returns a message with this information.
     public function update(Request $request, $id)
     {
-        // Get url with safeURL helper function.
-        $url = $this->safeURL();
-
         // Return json response. 400 - Bad Request
         return response()->json([
             'success' => false,
@@ -188,5 +185,74 @@ class CaptureController extends Controller
                 'message' => "The capture of {$pokemon->name} by {$user->name} could not be delete."
             ], 500);
         }
+    }
+
+
+    // Provides information on the current state of the users (trainers) pokedex.
+    public function evaluation()
+    {
+        // Get url with safeURL helper function.
+        $url = $this->safeURL();
+
+        // Get the user.
+        $user = auth()->user();
+
+        // Get the number of pokemon caputred.
+        $captured_count = $user->captures()->get()->count();
+        // Get the total number of pokemon.
+        $pokemon_count = Pokemon::all()->count();
+
+        // Calculate the percentage of pokemon captured.
+        $captured_percentage = round(($captured_count/$pokemon_count) * 100, 2);
+
+        // Get the oldest and latest captures.
+        $oldest_capture = $user->captures()->oldest('created_at')->first();
+        $latest_capture = $user->captures()->latest('created_at')->first();
+
+        // Get the pokemon that was captured in the oldest capture. Attach a link to that pokemons full information.
+        $oldest_pokemon = Pokemon::select('id', 'name')->where('id', $oldest_capture->pokemon_id)->first();
+        $oldest_pokemon['links'] = [
+            'self' => "{$url}/api/pokemon/{$oldest_pokemon->id}"
+        ];
+
+        // Get the pokemon that was captured in the latest capture. Attach a link to that pokemons full information.
+        $latest_pokemon = Pokemon::select('id', 'name')->where('id', $latest_capture->pokemon_id)->first();
+        $latest_pokemon['links'] = [
+            'self' => "{$url}/api/pokemon/{$latest_pokemon->id}"
+        ];
+
+        // Compile the data without the certificate completed.
+        $data = [
+            'captured_percentage' => $captured_percentage,
+            'pokemon_captured' => "{$captured_count} of {$pokemon_count}",
+            'captured_count' => $captured_count,
+            'pokemon_count' => $pokemon_count,
+            'oldest_capture' => [
+                'capture' => $oldest_capture,
+                'pokemon' => $oldest_pokemon
+            ],
+            'latest_capture' => [
+                'capture' => $latest_capture,
+                'pokemon' => $latest_pokemon
+            ],
+            'certificate' => [
+                'trainer' => $user->name,
+                'achieved' => false,
+                'text' => ''
+            ]
+        ];
+
+        // If the user has captured every pokemon, set the certificate to completed and add certificate text.
+        if ($captured_percentage == 100) {
+            $data['certificate']['achieved'] = true;
+            $data['certificate']['text'] = "We hereby certify that this Trainer has achieved the admirable feat of completeing the Pokedex with grace and much poise.";
+        }
+
+        // Return json response, 200 - OK
+        return response()->json([
+            'success' => true,
+            'message' => "Pokedex evaluation successfully retrieved for {$user->name}.",
+            'data' => $data
+        ], 200);
     }
 }
