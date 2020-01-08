@@ -13,5 +13,17 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::get('/pokemon', 'PokemonController@index');
-Route::get('/pokemon/{id}', 'PokemonController@show');
+// Routes to get pokemon data.
+Route::get('/pokemon', 'PokemonController@index');  // Get paginated pokemon list.
+Route::get('/pokemon/{id}', 'PokemonController@show');  // Get specific pokemon data.
+
+// Routes to register and login users (trainers).
+Route::post('register', 'PassportController@register');  // Takes new trainer information(name, email, password) and creates a new user.
+Route::post('login', 'PassportController@login');  // Takes user information and returns an access token for that user.
+ 
+// Authorization protected routes.
+Route::middleware('auth:api')->group(function () {
+    Route::get('user', 'PassportController@details'); // Get user data.
+ 
+    Route::resource('captures', 'CaptureController'); // Get all, get one, create new, or delete user pokemon captures.
+});
