@@ -51,7 +51,7 @@ class CaptureController extends Controller
         $url = $this->safeURL();
 
         // Attempt to retrieve a capture with the matching pokemon id (of the desired pokemon) from the database.
-        $capture = auth()->user()->captures()->where('pokemon_id', $id)->first()->toArray();
+        $capture = auth()->user()->captures()->where('pokemon_id', $id)->first();
 
         // Retrieve the pokemon with the provided id from the database.
         $pokemon = Pokemon::select('id', 'name')->where('id', $id)->first();

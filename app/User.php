@@ -38,6 +38,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+    // Returns all captures for the current user.
     public function captures()
     {
         return $this->hasMany(Capture::class);

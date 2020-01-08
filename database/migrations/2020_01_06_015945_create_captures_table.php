@@ -18,8 +18,10 @@ class CreateCapturesTable extends Migration
             $table->bigInteger('user_id');
             $table->bigInteger('pokemon_id');
             $table->timestamps();
+
+            $table->unique(['user_id', 'pokemon_id']); // A user (trainer) can only mark a pokemon as captured once.
         });
-            Schema::enableForeignKeyConstraints('captures', function (Blueprint $table){
+        Schema::enableForeignKeyConstraints('captures', function (Blueprint $table){
             $table->foreign('user_id')
             ->references('id')
             ->on('users');
