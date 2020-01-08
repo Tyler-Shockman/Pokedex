@@ -26,4 +26,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('user', 'PassportController@details'); // Get user data.
  
     Route::resource('captures', 'CaptureController'); // Get all, get one, create new, or delete user pokemon captures.
+
+    Route::get('evaluation', 'CaptureController@evaluation'); // Get pokedex evaluation information.
 });
